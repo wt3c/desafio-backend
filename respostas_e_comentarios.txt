@@ -1,15 +1,98 @@
+Prologo
+    Crei o app core, para manter os modulos de login e todo modulo que for comum as apps.
+    Na tela de login utilizaria recursos padrão do Django como por exemplo os modulos:
+
+    from django.contrib.auth import login as auth_login, logout as auth_logout
+    from django.contrib.auth.forms import AuthenticationForm
+
+    Para administra as permissões dos usuários usaria o Admins do Django.
+    As urls referentes ao login/logout estou configuradas no arquivo project_config/urls.py
+
 1)
+    Nesse passo utilizo o Forms e Models do Django e o Django_rest_framework.
+    Adiciono um template chamado index.html dentro do app desafio, pelo qual entro com o ID.
+    Esse Forms só teria a função de chamar a urls "dominio/objdocumento/(pk)"  para a classe objDocumento(APIView) na
+    do app desafio.
+    Utilizo componente APIView na Classe objDocumento por questão de gosto, acredito que o codigo fica mais legível
+    e organizado.
+
+    Configuro o Models para representar o banco de dados relacional
+    Models e Forms são PSEUDO_CODIGOs.
 
 2)
+    Na desafio/view é feito uma consulta ao banco de dados com o id passado anteriormente como paramentro, havendo
+    retorno, segue para o passo três, caso contrário  é levantado uma exceção 404.
 
 3)
+    Considerei que não existe documento no banco relacional que não esteja relacionado ao idtram disponibilizado pelo
+    TJRJ.
+
+    Com o retorno do Banco relacional passo como paramentro o valor documento.id_tjrj. Para simplificar utilizei
+    PSEUDO_CODIGO para recuperar as informações do TJRJ.
+
+    Adciono um novo modulo chamado desafio/trata_tjrj que vai tratar e retorna como tipo Python dicionário as
+     informações do TJRJ
+
+        No modulo trata_tjrj adcionei as libs traceback e xmltodict ao projeto
+        *   Traceback para tratar mensagem de erro
+        *   xmltodict para converter o XML fornecido pel TJRJ para Python dicionário.
+     Feito o parse do xml para dict com sucesso, retorno o dict para ser renderizado para um FORMS chamado
+     desafio/desafioForm que exibirá as informações para o usuário.
+     Se o parse houve erro será levantado um exceção.
 
 4)
+    Crio um modulo para gerenciar o log desafio/gerar_log. Passo, usuário, as informações do TJRJ já convertida em dict
+    e o ID.
+    Converto o dict data_tjrj para uma namedtuple para resolver de forma dinâmica o problema de alterações
+    nas informações do TJRJ.
+        ** data = namedtuple('tjrj', data_tjrj.key())(**data_tjrj)
+    O arquivo de log, propriamente dito é salvo na app desafio no formato CSV.
 
 5)
+    Crio um modulo chamado desafio/status_tramita que busca no Banco todas as tramitações que ainda estão abertas e
+    comparo com as informações no TJRJ, havendo mudança no status informo ao usuário que fez as requições.
+    Nesse modulo junto as informções do log, do Banco de dados e do TJRJ.
+
+    O agendamento dessa tarefa é feita pelo crontab do linux onde o serviço está hospedado. Não havendo a possibilidade de
+    uso do crontab, posso usar a lib 'schedule' .: https://pypi.org/project/schedule/ :.
+    Também existe a opção, entre outras, do Apache Airflow.
+    O Airflow não seria uma opção muito interessando devido ao seu porte e instalação do serviço.
+    Como é uma tarefa simples o ideal seria o Crontab.
 
 6)
+    Utilizo o decorator @login_required(login_url='/login/')
 
 7)
+    A principio eu não modificaria o sistema. Como relatado, as requisições são feitas por um "conjunto pequeno de ids."
+    Somente executaria alguma mudança, analisando mais profundamente a performance do sistema e o mesmo indicar algum
+    "gargalho" no processo.
 
 8)
+    Novamente, para responder com mais assertividade essa pergunta eu precisaria de mais informações,
+    por exemplo :
+        Qual é a recorrência desse tipo demanda ?
+        Qual tempo disponível para retornar a informação ?
+        Qual o tamanho do arquivo de log ?
+
+    Ainda é possível levantar mais questionamentos, porém, partindo desses três, considerando que demandas desses tipo
+    são recorrente, que o tempo de retorno é curto é o arquivo de logs é grande, contendo bilhões de registros.
+    Eu indicaria as seguintes soluções para essa demanda:
+        * Banco NoSQL ElasticSearch que disponibiliza ótimos recursos para essa tarefa.
+        * Banco relacional PostgreSQL que disponibiliza o recursos de full-text search desde da versão 8.3
+        * O framework Apache Spark que seria perfeito para essa demanda, fácil de instalar, extremamente rápido para
+            trabalhar com grandes quantidades de dados, além de integrações com bancos relacionais e NoSQL como o
+            ElasticSearch, Hive entre outros.
+
+        Desvantagens:
+            *  Todos tem a curva aprendizado mediano, essa é uma pequena desvantagem.
+            *  Todos tem o problema importação incial, porem, ElasticSearch e o PostgreSQl podem ser configurados para
+                que os novos logs sejam armazenados diretamente nele. No Spark seja necessário sempre a importação.
+            *  Acredito que o ElasticSearch tenha um performance melhor que a do PostgreSQL, porem acredito que os dois
+                são inferiores ao Spark.
+            *  Após o processo dos dados, ElasticSearch e o PostgreSQl, já estão com os dados disponível para consumo,
+                no Spark terá a necessidade de exportação desses dados para serem consumidos em outros lugar.
+
+
+    Acredito que nessa configuração de demanda, A solução ideal seria o Apacha Spark. Além de ler  vários formatos de
+    arquivos, CSV, TXT, Parquet, Json entre outros. Após o processo dos dados, as informações podem se exportadas em
+    vários formatos como CSV, TXT, Parquet, Json entre outros.

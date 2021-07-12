@@ -1,4 +1,4 @@
 from django.db import models
 
-
-# Caso precise criar algum modelo para sua aplicação
+class Documento(models.Model):
+    # Codigo para representação da tabela do Banco relacional
